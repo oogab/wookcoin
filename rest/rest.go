@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/oogab/wookchain/blockchain"
@@ -82,15 +83,18 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 
 func block(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	id, err := strconv.Atoi(vars["height"])
+	utils.HandleErr(err)
+	block := blockchain.GetBlockChain().GetBlock(id)
+	json.NewEncoder(rw).Encode(block)
 }
 
 func Start(aPort int) {
 	router := mux.NewRouter()
 	port = fmt.Sprintf(":%d", aPort)
 	router.HandleFunc("/", documentation).Methods("GET")
-	router.HandleFunc("/blocks", blocks).Methods("GET, POST")
-	router.HandleFunc("/blocks/{id:[0-9]+}", block).Methods("GET")
+	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
+	router.HandleFunc("/blocks/{height:[0-9]+}", block).Methods("GET")
 	fmt.Printf("Listening on http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, router))
 }
