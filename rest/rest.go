@@ -8,8 +8,8 @@ import (
 	"strconv"
 
 	"github.com/gorilla/mux"
-	"github.com/oogab/wookchain/blockchain"
-	"github.com/oogab/wookchain/utils"
+	"github.com/oogab/wookcoin/blockchain"
+	"github.com/oogab/wookcoin/utils"
 )
 
 // const port string = ":4000"

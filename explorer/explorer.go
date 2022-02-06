@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/oogab/wookchain/blockchain"
+	"github.com/oogab/wookcoin/blockchain"
 )
 
 const (
@@ -43,6 +43,6 @@ func Start(port int) {
 	templates = template.Must(templates.ParseGlob(templateDir + "partials/*.gohtml"))
 	handler.HandleFunc("/", home)
 	handler.HandleFunc("/add", add)
-	fmt.Printf("Listening on http://localhost%d\n", port)
+	fmt.Printf("Listening on http://localhost:%d\n", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), handler))
 }
