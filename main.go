@@ -1,8 +1,8 @@
 package main
 
-import "github.com/oogab/wookcoin/cli"
+import "github.com/nomadcoders/nomadcoin/blockchain"
 
 func main() {
-	// go explorer.Start(3000)
-	cli.Start()
+	chain := blockchain.GetBlockchain()
+	chain.AddBlock("Second Block")
 }
