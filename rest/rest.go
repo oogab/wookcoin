@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/oogab/wookcoin/blockchain"
 	"github.com/oogab/wookcoin/utils"
 )
@@ -81,15 +82,23 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func block(rw http.ResponseWriter, r *http.Request) {
+	// 이제 함수에 필요한 이 id를 어떻게 받아오는지 알아보자.
+	vars := mux.Vars(r)
+	id := vars["id"]
+}
+
 func Start(aPort int) {
-	// 새로운 ServeMux를 생성
-	// ServeMux는 url(/blocks)과 url 함수(blocks)를 연결해주는 역할을 한다.
-	handler := http.NewServeMux()
+	router := mux.NewRouter()
 	port = fmt.Sprintf(":%d", aPort)
-	handler.HandleFunc("/", documentation)
-	handler.HandleFunc("/blocks", blocks)
+	// 이 router의 특징은 url이 어떤 method를 처리할지 특정할 수 있다는 것
+	// 이게 유용한 이유는 다른 method로부터 보호해 주기 때문이다.
+	// 만약 이게 가능하지 않았다면 우리는 router function 내부의 switch case에서 default 처리가 필요하다.
+	// default:
+	//   rw.WriteHeader(http.StatusMethodNotAllowed)
+	router.HandleFunc("/", documentation).Methods("GET")
+	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
+	router.HandleFunc("/blocks/{id:[0-9]+}", block).Methods("GET")
 	fmt.Printf("Listening on http://localhost%s\n", port)
-	// handler에 nil이 아니라 우리가 만든 handler(ServeMux)를 넣어준다.
-	// DefaultServeMux를 사용하지 않게 된다.
-	log.Fatal(http.ListenAndServe(port, handler))
+	log.Fatal(http.ListenAndServe(port, router))
 }

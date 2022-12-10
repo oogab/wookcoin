@@ -40,9 +40,7 @@ func add(rw http.ResponseWriter, r *http.Request) {
 
 func Start(port int) {
 	handler := http.NewServeMux()
-	// Create templates
 	templates = template.Must(template.ParseGlob(templateDir + "pages/*.gohtml"))
-	// Update templates
 	templates = template.Must(templates.ParseGlob(templateDir + "partials/*.gohtml"))
 	handler.HandleFunc("/", home)
 	handler.HandleFunc("/add", add)
