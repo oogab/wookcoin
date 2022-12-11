@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/oogab/wookcoin/blockchain"
@@ -38,6 +39,10 @@ type addBlockBody struct {
 	Message string
 }
 
+type errorResponse struct {
+	ErrorMessage string `json:"errorMessage"`
+}
+
 func (u urlDescription) String() string {
 	return "Hello I'm the URL Description"
 }
@@ -56,19 +61,17 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Payload:     "data:string",
 		},
 		{
-			URL:         url("/blocks/{id}"),
+			URL:         url("/blocks/{height}"),
 			Method:      "GET",
 			Description: "See A Block",
 		},
 	}
-	rw.Header().Add("Content-Type", "application/json")
 	json.NewEncoder(rw).Encode(data)
 }
 
 func blocks(rw http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		rw.Header().Add("Content-Type", "application/json")
 		// Encode가 Marshal의 일을 해주고, 결과를 ResponseWrite에 작성.
 		json.NewEncoder(rw).Encode(blockchain.GetBlockchain().AllBlocks())
 	case "POST":
@@ -85,20 +88,37 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 func block(rw http.ResponseWriter, r *http.Request) {
 	// 이제 함수에 필요한 이 id를 어떻게 받아오는지 알아보자.
 	vars := mux.Vars(r)
-	id := vars["id"]
+	id, err := strconv.Atoi(vars["height"])
+	utils.HandleError(err)
+	block, err := blockchain.GetBlockchain().GetBlock(id)
+	encoder := json.NewEncoder(rw)
+	if err == blockchain.ErrNotFound {
+		// 여기서는 error 메세지를 encode
+		encoder.Encode(errorResponse{fmt.Sprint(err)})
+	} else {
+		encoder.Encode(block)
+	}
+}
+
+// 모든 request에 Content-Type을 설정하는 middleware를 만들자!
+func jsonContentTypeMiddleware(next http.Handler) http.Handler {
+	// 중요한 점은 아래 http.HandleFunc는 handler가 아니라 type이다.
+	// type HandlerFunc func(ResponseWriter, *Request)
+	// HandlerFunc라는 type은 바로 adapter이다.
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Add("Content-Type", "application/json")
+		next.ServeHTTP(rw, r)
+	})
 }
 
 func Start(aPort int) {
 	router := mux.NewRouter()
 	port = fmt.Sprintf(":%d", aPort)
-	// 이 router의 특징은 url이 어떤 method를 처리할지 특정할 수 있다는 것
-	// 이게 유용한 이유는 다른 method로부터 보호해 주기 때문이다.
-	// 만약 이게 가능하지 않았다면 우리는 router function 내부의 switch case에서 default 처리가 필요하다.
-	// default:
-	//   rw.WriteHeader(http.StatusMethodNotAllowed)
+	// node에서 middleware를 사용하는 방법과 매우 유사하다.
+	router.Use(jsonContentTypeMiddleware)
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
-	router.HandleFunc("/blocks/{id:[0-9]+}", block).Methods("GET")
+	router.HandleFunc("/blocks/{height:[0-9]+}", block).Methods("GET")
 	fmt.Printf("Listening on http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, router))
 }
