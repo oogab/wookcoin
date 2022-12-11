@@ -1,9 +1,7 @@
 package main
 
-import (
-	"github.com/oogab/wookcoin/cli"
-)
+import "github.com/oogab/wookcoin/blockchain"
 
 func main() {
-	cli.Start()
+	blockchain.Blockchain()
 }

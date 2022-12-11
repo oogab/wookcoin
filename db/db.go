@@ -1,6 +1,8 @@
 package db
 
 import (
+	"fmt"
+
 	"github.com/boltdb/bolt"
 	"github.com/oogab/wookcoin/utils"
 )
@@ -45,4 +47,27 @@ func DB() *bolt.DB {
 		utils.HandleError(err)
 	}
 	return db
+}
+
+// 중요한 것은 data를 []byte 형태로 변환해야 한다.
+// data -> Block struct
+func SaveBlock(hash string, data []byte) {
+	fmt.Printf("Saving block %s\nData: %b", hash, data)
+	err := DB().Update(func(t *bolt.Tx) error {
+		bucket := t.Bucket([]byte(blocksBucket))
+		err := bucket.Put([]byte(hash), data)
+		return err
+	})
+	utils.HandleError(err)
+}
+
+// data -> BlockChain NewestHash, Height 이 두개 값만 저장된다.
+// 그래서 key 자체는 크게 상관없다. 내가 지어주고 싶은대로 입력하면 됨
+func SaveBlockchain(data []byte) {
+	err := DB().Update(func(t *bolt.Tx) error {
+		bucket := t.Bucket([]byte(dataBucket))
+		err := bucket.Put([]byte("checkpoint"), data)
+		return err
+	})
+	utils.HandleError(err)
 }
