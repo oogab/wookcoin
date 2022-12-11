@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/oogab/wookcoin/rest"
+	"github.com/oogab/wookcoin/cli"
 )
 
 func main() {
-	rest.Start(4000)
+	cli.Start()
 }
