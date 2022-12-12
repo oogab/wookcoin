@@ -1,9 +1,6 @@
 package blockchain
 
 import (
-	"bytes"
-	"encoding/gob"
-	"fmt"
 	"sync"
 
 	"github.com/oogab/wookcoin/db"
@@ -23,17 +20,11 @@ var (
 )
 
 func (b *blockchain) restore(data []byte) {
-	decoder := gob.NewDecoder(bytes.NewReader(data))
-	// Decode는 pointer로 decode해야 한다고 되어 있다.
-	// pointer가 아닌 것을 보내면 decode할 수 없다.
-	// decode는 memory address의 value를 변경하기 때문에.
-	// blockchain 전체를 이 decode된 값으로 바꾼다.
-	utils.HandleError(decoder.Decode(b))
-	// DB에서 찾은 byte를 텅 빈 블록체인의 memory address에 decode한다.
+	utils.FromBytes(b, data)
 }
 
 func (b *blockchain) persist() {
-	db.SaveBlockchain(utils.ToBytes(b))
+	db.SaveCheckpoint(utils.ToBytes(b))
 }
 
 // 블록을 DB에 저장하겠다.
@@ -45,11 +36,29 @@ func (b *blockchain) AddBlock(data string) {
 	b.persist()
 }
 
+// NewestHash를 가지고 해당 블록을 찾는다.
+// 그리고 가장 최근 블록의 prevHash로 이 과정을 반복한다.
+// prevHash가 없는 블록을 찾을 때 까지 계속
+func (b *blockchain) Blocks() []*Block {
+	var blocks []*Block
+	hashCursor := b.NewestHash
+	for {
+		block, _ := FindBlock(hashCursor)
+		blocks = append(blocks, block)
+		if block.PrevHash != "" {
+			hashCursor = block.PrevHash
+		} else {
+			// prevHash가 없는 Genesis 블록에 도달했다면! for문 탈출
+			break
+		}
+	}
+	return blocks
+}
+
 func Blockchain() *blockchain {
 	if b == nil {
 		once.Do(func() {
 			b = &blockchain{"", 0}
-			fmt.Printf("NewestHash: %s\nHeight: %d\n", b.NewestHash, b.Height)
 			checkpoint := db.Checkpoint()
 			// checkpoint가 없다면 연결된 block이 하나도 없다는 것
 			// Genesis block을 만든다.
@@ -58,11 +67,9 @@ func Blockchain() *blockchain {
 			} else {
 				// restore blockchain from bytes
 				// bytes를 decode한다.
-				fmt.Println("Restoring...")
 				b.restore(checkpoint)
 			}
 		})
 	}
-	fmt.Printf("NewestHash: %s\nHeight: %d\n", b.NewestHash, b.Height)
 	return b
 }

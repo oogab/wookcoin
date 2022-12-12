@@ -34,6 +34,10 @@ func DB() *bolt.DB {
 	return db
 }
 
+func Close() {
+	DB().Close()
+}
+
 func SaveBlock(hash string, data []byte) {
 	fmt.Printf("Saving block %s\nData: %b\n", hash, data)
 	err := DB().Update(func(t *bolt.Tx) error {
@@ -46,7 +50,7 @@ func SaveBlock(hash string, data []byte) {
 
 // data -> BlockChain NewestHash, Height 이 두개 값만 저장된다.
 // 그래서 key 자체는 크게 상관없다. 내가 지어주고 싶은대로 입력하면 됨
-func SaveBlockchain(data []byte) {
+func SaveCheckpoint(data []byte) {
 	err := DB().Update(func(t *bolt.Tx) error {
 		bucket := t.Bucket([]byte(dataBucket))
 		err := bucket.Put([]byte(checkpoint), data)
@@ -68,6 +72,17 @@ func Checkpoint() []byte {
 		// byte의 slice만 return 해준다.
 		data = bucket.Get([]byte(checkpoint))
 		// 그래서 return nil
+		return nil
+	})
+	return data
+}
+
+// DB의 blocks bucket에서 특정 hash값을 key값으로 특정 block 정보를 찾을 수 있음
+func Block(hash string) []byte {
+	var data []byte
+	DB().View(func(t *bolt.Tx) error {
+		bucket := t.Bucket([]byte(blocksBucket))
+		data = bucket.Get([]byte(hash))
 		return nil
 	})
 	return data

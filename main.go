@@ -1,7 +1,11 @@
 package main
 
-import "github.com/oogab/wookcoin/blockchain"
+import (
+	"github.com/oogab/wookcoin/cli"
+	"github.com/oogab/wookcoin/db"
+)
 
 func main() {
-	blockchain.Blockchain()
+	defer db.Close()
+	cli.Start()
 }
