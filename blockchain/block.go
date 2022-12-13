@@ -9,8 +9,15 @@ import (
 	"github.com/oogab/wookcoin/utils"
 )
 
-// block에 두 가지 요소를 추가한다.
-// block 구조를 변경했기 때문에 .db 파일은 삭제한다.
+// 0이 2개로 시작하는 hash를 찾는다.
+const difficulty int = 2
+
+// hash는 결정론적 함수이다. -> 출력값을 바꾸려면 입력값을 수정해야한다.
+// 그런데 블록체인에서는 뭔가를 수정할 수 있는게 거의 없다.
+// hash를 수정하면 이 블록을 사용하지 못하게 됨
+// Data는 유저가 보내주는 거라 수정하지 못 함
+// Height도 마찬가지로 수정하지 못 함
+// 하지만 Noncd 값은 블록체인에서 채굴자들이 변경할 수 있는 유일한 값이다.
 type Block struct {
 	Data       string `json:"data"`
 	Hash       string `json:"hash"`
