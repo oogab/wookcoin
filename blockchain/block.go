@@ -1,23 +1,15 @@
 package blockchain
 
 import (
-	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/oogab/wookcoin/db"
 	"github.com/oogab/wookcoin/utils"
 )
 
-// 0이 2개로 시작하는 hash를 찾는다.
-const difficulty int = 2
-
-// hash는 결정론적 함수이다. -> 출력값을 바꾸려면 입력값을 수정해야한다.
-// 그런데 블록체인에서는 뭔가를 수정할 수 있는게 거의 없다.
-// hash를 수정하면 이 블록을 사용하지 못하게 됨
-// Data는 유저가 보내주는 거라 수정하지 못 함
-// Height도 마찬가지로 수정하지 못 함
-// 하지만 Noncd 값은 블록체인에서 채굴자들이 변경할 수 있는 유일한 값이다.
 type Block struct {
 	Data       string `json:"data"`
 	Hash       string `json:"hash"`
@@ -25,6 +17,7 @@ type Block struct {
 	Height     int    `json:"height"`
 	Difficulty int    `json:"difficulty"`
 	Nonce      int    `json:"nonce"`
+	Timestamp  int    `json:"timestamp"`
 }
 
 // block을 저장하기 위해 만들어 놓은 SaveBlock을 호출한다.
@@ -49,15 +42,32 @@ func FindBlock(hash string) (*Block, error) {
 	return block, nil
 }
 
+func (b *Block) mine() {
+	target := strings.Repeat("0", b.Difficulty)
+
+	for {
+		b.Timestamp = int(time.Now().Unix())
+		hash := utils.Hash(b)
+		fmt.Printf("\n\n\nTarget:%s\nHsah:%s\nNonce:%d\n\n\n", target, hash, b.Nonce)
+		if strings.HasPrefix(hash, target) {
+			b.Hash = hash
+			break
+		} else {
+			b.Nonce++
+		}
+	}
+}
+
 func createBlock(data string, prevHash string, height int) *Block {
 	block := &Block{
-		Data:     data,
-		Hash:     "",
-		PrevHash: prevHash,
-		Height:   height,
+		Data:       data,
+		Hash:       "",
+		PrevHash:   prevHash,
+		Height:     height,
+		Difficulty: Blockchain().difficulty(),
+		Nonce:      0,
 	}
-	payload := block.Data + block.PrevHash + fmt.Sprint(block.Height)
-	block.Hash = fmt.Sprintf("%x", sha256.Sum256([]byte(payload)))
+	block.mine()
 	block.persist()
 	return block
 }
