@@ -105,6 +105,42 @@ func (b *blockchain) difficulty() int {
 	}
 }
 
+// 단순히 모든 거래의 출력값들을 반환한다.
+func (b *blockchain) txOuts() []*TxOut {
+	var txOuts []*TxOut
+	blocks := b.Blocks()
+	for _, block := range blocks {
+		for _, tx := range block.Transactions {
+			txOuts = append(txOuts, tx.TxOuts...)
+		}
+	}
+	return txOuts
+}
+
+// 거래 출력값들을 주소에 따라 걸러낸다.
+// 문자열인 주소를 인수로 받는다.
+// 아래 함수는 export 한다. 왜? API에서 사용하기 위해서
+func (b *blockchain) TxOutsByAddress(address string) []*TxOut {
+	var ownedTxOuts []*TxOut
+	txOuts := b.txOuts()
+	for _, txOut := range txOuts {
+		if txOut.Owner == address {
+			ownedTxOuts = append(ownedTxOuts, txOut)
+		}
+	}
+	return ownedTxOuts
+}
+
+// 거래 출력값들의 총량을 보여준다.
+func (b *blockchain) BalanceByAddress(address string) int {
+	txOuts := b.TxOutsByAddress(address)
+	var amount int
+	for _, txOut := range txOuts {
+		amount += txOut.Amount
+	}
+	return amount
+}
+
 func Blockchain() *blockchain {
 	if b == nil {
 		once.Do(func() {

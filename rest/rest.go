@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/oogab/wookcoin/blockchain"
+	"github.com/oogab/wookcoin/utils"
 )
 
 // const port string = ":4000"
@@ -20,6 +21,11 @@ type url string
 func (u url) MarshalText() ([]byte, error) {
 	url := fmt.Sprintf("http://localhost%s%s", port, u)
 	return []byte(url), nil
+}
+
+type balanceResponse struct {
+	Address string `json:"address"`
+	Balance int    `json:"balance"`
 }
 
 // URL이 대문자일 필요는 없음
@@ -62,6 +68,11 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			URL:         url("/blocks/{hash}"),
 			Method:      "GET",
 			Description: "See A Block",
+		},
+		{
+			URL:         url("/balance/{address}"),
+			Method:      "GET",
+			Description: "Get TxOuts for an Address",
 		},
 	}
 	json.NewEncoder(rw).Encode(data)
@@ -107,16 +118,33 @@ func status(rw http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(rw).Encode(blockchain.Blockchain())
 }
 
+func balance(rw http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	address := vars["address"]
+	// total이 존재하는지 확인한다.
+	total := r.URL.Query().Get("total")
+	switch total {
+	case "true":
+		// 이 amount를 response의 형태로 만들어 보내야 한다.
+		// response 구조를 만들어주자.
+		amount := blockchain.Blockchain().BalanceByAddress(address)
+		json.NewEncoder(rw).Encode(balanceResponse{address, amount})
+	default:
+		utils.HandleError(json.NewEncoder(rw).Encode(blockchain.Blockchain().TxOutsByAddress(address)))
+	}
+}
+
 func Start(aPort int) {
 	router := mux.NewRouter()
 	port = fmt.Sprintf(":%d", aPort)
-	// node에서 middleware를 사용하는 방법과 매우 유사하다.
 	router.Use(jsonContentTypeMiddleware)
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/status", status)
 	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
-	// hash hexadecimal
 	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", block).Methods("GET")
+	// /balance/{address}를 통해서는 모든 거래 출력값들을 가져오고
+	// /balance/{address}?total=true를 통해서는 자산 총액만 받는다.
+	router.HandleFunc("/balance/{address}", balance)
 	fmt.Printf("Listening on http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, router))
 }
