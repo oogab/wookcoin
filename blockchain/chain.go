@@ -36,8 +36,8 @@ func (b *blockchain) persist() {
 	db.SaveCheckpoint(utils.ToBytes(b))
 }
 
-func (b *blockchain) AddBlock(data string) {
-	block := createBlock(data, b.NewestHash, b.Height+1)
+func (b *blockchain) AddBlock() {
+	block := createBlock(b.NewestHash, b.Height+1)
 	b.NewestHash = block.Hash
 	b.Height = block.Height
 	// 블록을 추가할 때마다 현재의 difficulty 저장
@@ -114,7 +114,7 @@ func Blockchain() *blockchain {
 			checkpoint := db.Checkpoint()
 
 			if checkpoint == nil {
-				b.AddBlock("Genesis")
+				b.AddBlock()
 			} else {
 				b.restore(checkpoint)
 			}

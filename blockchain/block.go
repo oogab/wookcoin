@@ -10,14 +10,18 @@ import (
 	"github.com/oogab/wookcoin/utils"
 )
 
+// 이제 block에서 몇가지 작업을 하자
 type Block struct {
-	Data       string `json:"data"`
+	// Data는 단순히 사용자가 입력한 문자열이니 지워주자!
+	// Data       string `json:"data"`
 	Hash       string `json:"hash"`
 	PrevHash   string `json:"prevHash,omitempty"`
 	Height     int    `json:"height"`
 	Difficulty int    `json:"difficulty"`
 	Nonce      int    `json:"nonce"`
 	Timestamp  int    `json:"timestamp"`
+	// 우리의 Block은 이제 transaction을 가지게 된다.
+	Transactions []*Tx `json:"transactions"`
 }
 
 // block을 저장하기 위해 만들어 놓은 SaveBlock을 호출한다.
@@ -58,14 +62,18 @@ func (b *Block) mine() {
 	}
 }
 
-func createBlock(data string, prevHash string, height int) *Block {
+// Data 관련 parameter, field 삭제
+func createBlock(prevHash string, height int) *Block {
 	block := &Block{
-		Data:       data,
 		Hash:       "",
 		PrevHash:   prevHash,
 		Height:     height,
 		Difficulty: Blockchain().difficulty(),
 		Nonce:      0,
+		// 채굴자들을 위한 거래내역들이 들어갈 예정이다.
+		// 이게 코인베이스 거래이다. -> 블록체인에서 생성되는 거래내역
+		// 여기에 코인베이스 거래내역을 생성하는 함수가 필요하다.
+		Transactions: []*Tx{makeCoinbaseTx("wook")},
 	}
 	block.mine()
 	block.persist()
