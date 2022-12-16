@@ -10,6 +10,15 @@ const (
 	minerReward int = 50
 )
 
+type mempool struct {
+	Txs []*Tx
+}
+
+// Mempool 변수 초기화
+// 비어있는 mempool을 생성한다.
+// mempool은 memory에서만 존재한다.
+var Mempool *mempool = &mempool{}
+
 type Tx struct {
 	Id        string   `json:"id"`
 	Timestamp int      `json:"timestamp"`
@@ -50,4 +59,11 @@ func makeCoinbaseTx(address string) *Tx {
 	}
 	tx.getId()
 	return &tx
+}
+
+// 받을 사람 to와 amount를 넘겨준다.
+// 보내는 사람은 중요하지 않다. 왜? 보내는 사람은 function에서 받아오는게 아니고 지갑에서 받아올 것이기 때문에
+// 만약 어떤 이유로 transaction을 추가할 수 없게되면 error를 발생시킬 수도 있다.
+func (m *mempool) AddTx(to string, amount int) error {
+
 }

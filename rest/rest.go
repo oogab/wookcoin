@@ -134,6 +134,11 @@ func balance(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// 이제 transaction을 생성하면 여기서 확인할 수 있다.
+func mempool(rw http.ResponseWriter, r *http.Request) {
+	utils.HandleError(json.NewEncoder(rw).Encode(blockchain.Mempool.Txs))
+}
+
 func Start(aPort int) {
 	router := mux.NewRouter()
 	port = fmt.Sprintf(":%d", aPort)
@@ -142,9 +147,8 @@ func Start(aPort int) {
 	router.HandleFunc("/status", status)
 	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
 	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", block).Methods("GET")
-	// /balance/{address}를 통해서는 모든 거래 출력값들을 가져오고
-	// /balance/{address}?total=true를 통해서는 자산 총액만 받는다.
 	router.HandleFunc("/balance/{address}", balance)
+	router.HandleFunc("/mempool", mempool)
 	fmt.Printf("Listening on http://localhost%s\n", port)
 	log.Fatal(http.ListenAndServe(port, router))
 }
