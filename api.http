@@ -21,3 +21,14 @@ http://localhost:4000/balance/wook
 
 ###
 http://localhost:4000/balance/wook?total=true
+
+###
+http://localhost:4000/mempool
+
+###
+POST http://localhost:4000/transactions
+
+{
+  "to":"lynn",
+  "amount":20
+}
