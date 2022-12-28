@@ -70,12 +70,11 @@ func createBlock(prevHash string, height int) *Block {
 		Height:     height,
 		Difficulty: Blockchain().difficulty(),
 		Nonce:      0,
-		// 채굴자들을 위한 거래내역들이 들어갈 예정이다.
-		// 이게 코인베이스 거래이다. -> 블록체인에서 생성되는 거래내역
-		// 여기에 코인베이스 거래내역을 생성하는 함수가 필요하다.
-		Transactions: []*Tx{makeCoinbaseTx("wook")},
 	}
 	block.mine()
+	// 채굴을 끝내고 해시를 찾고 전부 끝낸 다음
+	// transaction들을 block에 넣어 준다.
+	block.Transactions = Mempool.TxToConfirm()
 	block.persist()
 	return block
 }

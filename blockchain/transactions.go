@@ -114,3 +114,17 @@ func (m *mempool) AddTx(to string, amount int) error {
 	m.Txs = append(m.Txs, tx)
 	return nil
 }
+
+// * 아래 메소드는 '승인할 트랜잭션들 가져오기'같은 느낌의 함수이다.
+// 모든 transaction들을 건네주고 mempool 또한 비워줘야 한다.
+// 아래 메소드의 로직은 모두 블록을 채굴했을 때에만 실행된다.
+func (m *mempool) TxToConfirm() []*Tx {
+	coinbase := makeCoinbaseTx("wook")
+	// Mempool에서 모든 tx들을 가져오고 coinbase tx와 함께
+	// txs라는 큰 배열에다가 담아준다.
+	txs := m.Txs
+	txs = append(txs, coinbase)
+	// Mempool의 tx들을 비워준다.
+	m.Txs = nil
+	return txs
+}
