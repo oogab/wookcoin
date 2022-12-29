@@ -105,23 +105,37 @@ func (b *blockchain) difficulty() int {
 	}
 }
 
-// 이제 쓸모가 없어졌다.
-// 더 이상 transaction output을 가지고 오는걸 신경쓰지 않아도 되기 때문에
-// func (b *blockchain) txOuts() []*TxOut {
-// 	var txOuts []*TxOut
-// 	blocks := b.Blocks()
-// 	for _, block := range blocks {
-// 		for _, tx := range block.Transactions {
-// 			txOuts = append(txOuts, tx.TxOuts...)
-// 		}
-// 	}
-// 	return txOuts
-// }
+func (b *blockchain) UTxOutsByAddress(address string) []*UTxOut {
+	var uTxOuts []*UTxOut
+	// 사용한 Output들 정보를 저장하는 map을 만든다.
+	// key -> transaction ID, value -> true, false
+	creatorTxs := make(map[string]bool)
 
-// 아래 메소드는 그저 transaction output을 가져올 뿐
-// unspent transaction output을 가지고 오는건 아니다.
-// 이름도 기존 TxOutsByAddress에서 UTxOutsByAddress로 변경
-func (b *blockchain) UTxOutsByAddress(address string) []*TxOut {
+	for _, block := range b.Blocks() {
+		// 모든 transaction에 대해서 실행
+		for _, tx := range block.Transactions {
+			for _, input := range tx.TxIns {
+				// input을 통해서 input을 생성할 때 사용한 output이 포함된 transaction을 찾는다.
+				// 그리고 해당 transaction의 output은 이미 사용되었음을 저장
+				if input.Owner == address {
+					creatorTxs[input.TxID] = true
+				}
+			}
+			// output이 앞서 생성한 creatorIds안에 있는 transaction 내부에 없다는 것을 확인
+			for index, output := range tx.TxOuts {
+				if output.Owner == address {
+					// ok값은 기본적으로 이 key 값이 이 map 안에 있는지 없는지 확인을 해주는 값
+					// ok가 true라면 이 output을 생성한 transaction을 creatorTxs에서 찾았다는 것이고,
+					// 이 output은 이미 다른 transaction에서 input으로 사용되었다는 증거
+					if _, ok := creatorTxs[tx.Id]; !ok {
+						uTxOuts = append(uTxOuts, &UTxOut{tx.Id, index, output.Amount})
+					}
+				}
+			}
+		}
+	}
+
+	return uTxOuts
 }
 
 // 거래 출력값들의 총량을 보여준다.
