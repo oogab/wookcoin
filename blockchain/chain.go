@@ -105,6 +105,7 @@ func (b *blockchain) difficulty() int {
 	}
 }
 
+// 여기 이해가 잘 안되는데 직접 block이랑 Ins, Outs를 그리고 추적하면 이해가 빠르다.
 func (b *blockchain) UTxOutsByAddress(address string) []*UTxOut {
 	var uTxOuts []*UTxOut
 	// 사용한 Output들 정보를 저장하는 map을 만든다.

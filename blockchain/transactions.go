@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/oogab/wookcoin/utils"
@@ -71,8 +72,40 @@ func makeCoinbaseTx(address string) *Tx {
 	return &tx
 }
 
-// makeTx는 많은 변경이 필요하기에 우선 내용물들을 싹 지워준다.
 func makeTx(from, to string, amount int) (*Tx, error) {
+	if Blockchain().BalanceByAddress(from) < amount {
+		return nil, errors.New("not enough 돈")
+	}
+	var txOuts []*TxOut
+	var txIns []*TxIn
+	// transaction output으로부터 받아온 총 잔고가 저장된다.
+	total := 0
+	uTxOuts := Blockchain().UTxOutsByAddress(from)
+	for _, uTxOut := range uTxOuts {
+		if total > amount {
+			break
+		}
+		// 이제 amount를 transaction input에 전달해주지 않는다.
+		// 하지만 아직 owner를 input에 저장하고 이는 보안상 안전하지 않다.
+		// 왜냐하면 사람들이 이 owner를 그냥 변경할 수 있기 때문 -> 이후 지갑 구현에서 보안 적용 예정
+		txIn := &TxIn{uTxOut.TxID, uTxOut.Index, from}
+		txIns = append(txIns, txIn)
+		total += uTxOut.Amount
+	}
+	if change := total - amount; change != 0 {
+		changeTxOut := &TxOut{from, change}
+		txOuts = append(txOuts, changeTxOut)
+	}
+	txOut := &TxOut{to, amount}
+	txOuts = append(txOuts, txOut)
+	tx := &Tx{
+		Id:        "",
+		Timestamp: int(time.Now().Unix()),
+		TxIns:     txIns,
+		TxOuts:    txOuts,
+	}
+	tx.getId()
+	return tx, nil
 }
 
 // 받을 사람 to와 amount를 넘겨준다.
