@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"errors"
 	"time"
 
 	"github.com/oogab/wookcoin/utils"
@@ -29,8 +28,14 @@ func (t *Tx) getId() {
 }
 
 type TxIn struct {
-	Owner  string `json:"owner"`
-	Amount int    `json:"amount"`
+	// 이제 더 이상 Amount는 필요하지 않다.
+	// 기존 output에서 받아올 것이기 때문에
+	// 기존 Tx의 ID를 TxID에 저장
+	// 그리고 그 Tx의 TxOuts들 중 몇 번째 것을 참조할 지 Index 저장
+	//* 즉 TxIn은 TxOut을 찾아갈 길과 같은 역할을 한다.
+	TxID  string `json:"txId"`
+	Index int    `json:"index"`
+	Owner string `json:"owner"`
 }
 
 type TxOut struct {
@@ -38,11 +43,18 @@ type TxOut struct {
 	Amount int    `json:"amount"`
 }
 
+// 다음으로 진행하기 전 새로운 type struct를 정의한다.
+// 우리가 어떤 output이 쓰였는지 안 쓰였는지 확인할 수 있게 도와줄 예정
+type UTxOut struct {
+	TxID   string `json:"txId"`
+	Index  int    `json:"index"`
+	Amount int    `json:"amount"`
+}
+
 func makeCoinbaseTx(address string) *Tx {
-	// 거래 입력값은 소유주가 있다. -> COINBASE
-	// 거래 입력값에는 총량도 있다. -> 채굴자에게 지급할 액수의 총량
+	// 이제 TxIn은 transaction ID, index 그리고 owner가 필요하다.
 	txIns := []*TxIn{
-		{"COINBASE", minerReward},
+		{"", -1, "COINBASE"},
 	}
 	// 거래 출력값의 소유주는 채굴자의 주소
 	txOuts := []*TxOut{
@@ -59,47 +71,8 @@ func makeCoinbaseTx(address string) *Tx {
 	return &tx
 }
 
-// transaction 생성
-// transaction은 들어오는 input과 같은 금액의 output이 필요하다.
-// wook -> input (100)
-// output => wook (30), user (70) 이런식으로..
+// makeTx는 많은 변경이 필요하기에 우선 내용물들을 싹 지워준다.
 func makeTx(from, to string, amount int) (*Tx, error) {
-	// wook 계좌에 충분한 잔금이 남아있는지 확인
-	if Blockchain().BalanceByAddress(from) < amount {
-		return nil, errors.New("not enough money")
-	}
-	// transaction Inputs를 생성 = 내가 보내고자 하는 금액과 똑같은 액수
-	// 하지만 tx Inputs를 생성하려면 이전 outputs로 부터 생성해야 한다.
-	var txIns []*TxIn
-	var txOuts []*TxOut
-	total := 0
-	oldTxOuts := Blockchain().TxOutsByAddress(from)
-	for _, txOut := range oldTxOuts {
-		// 충분한 tx Inputs를 가지고 있을 때 반복문 탈출
-		if total > amount {
-			break
-		}
-		txIn := &TxIn{txOut.Owner, txOut.Amount}
-		txIns = append(txIns, txIn)
-		total += txIn.Amount
-	}
-	// 잔돈 tx Output 생성
-	change := total - amount
-	if change != 0 {
-		changeTxOut := &TxOut{from, change}
-		txOuts = append(txOuts, changeTxOut)
-	}
-	// user에게 건넬 amount만큼의 tx Output 생성
-	txOut := &TxOut{to, amount}
-	txOuts = append(txOuts, txOut)
-	tx := &Tx{
-		Id:        "",
-		Timestamp: int(time.Now().Unix()),
-		TxIns:     txIns,
-		TxOuts:    txOuts,
-	}
-	tx.getId()
-	return tx, nil
 }
 
 // 받을 사람 to와 amount를 넘겨준다.
