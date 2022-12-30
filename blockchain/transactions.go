@@ -52,6 +52,20 @@ type UTxOut struct {
 	Amount int    `json:"amount"`
 }
 
+func isOnMempool(UTxOut *UTxOut) bool {
+	exists := false
+	for _, tx := range Mempool.Txs {
+		for _, input := range tx.TxIns {
+			// 여기서 exists true가 된다면,
+			// 이미 Mempool의 transaction Input으로 사용되었다는 것!
+			if input.TxID == UTxOut.TxID && input.Index == UTxOut.Index {
+				exists = true
+			}
+		}
+	}
+	return exists
+}
+
 func makeCoinbaseTx(address string) *Tx {
 	// 이제 TxIn은 transaction ID, index 그리고 owner가 필요하다.
 	txIns := []*TxIn{

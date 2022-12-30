@@ -105,31 +105,24 @@ func (b *blockchain) difficulty() int {
 	}
 }
 
-// 여기 이해가 잘 안되는데 직접 block이랑 Ins, Outs를 그리고 추적하면 이해가 빠르다.
 func (b *blockchain) UTxOutsByAddress(address string) []*UTxOut {
 	var uTxOuts []*UTxOut
-	// 사용한 Output들 정보를 저장하는 map을 만든다.
-	// key -> transaction ID, value -> true, false
 	creatorTxs := make(map[string]bool)
 
 	for _, block := range b.Blocks() {
-		// 모든 transaction에 대해서 실행
 		for _, tx := range block.Transactions {
 			for _, input := range tx.TxIns {
-				// input을 통해서 input을 생성할 때 사용한 output이 포함된 transaction을 찾는다.
-				// 그리고 해당 transaction의 output은 이미 사용되었음을 저장
 				if input.Owner == address {
 					creatorTxs[input.TxID] = true
 				}
 			}
-			// output이 앞서 생성한 creatorIds안에 있는 transaction 내부에 없다는 것을 확인
 			for index, output := range tx.TxOuts {
 				if output.Owner == address {
-					// ok값은 기본적으로 이 key 값이 이 map 안에 있는지 없는지 확인을 해주는 값
-					// ok가 true라면 이 output을 생성한 transaction을 creatorTxs에서 찾았다는 것이고,
-					// 이 output은 이미 다른 transaction에서 input으로 사용되었다는 증거
 					if _, ok := creatorTxs[tx.Id]; !ok {
-						uTxOuts = append(uTxOuts, &UTxOut{tx.Id, index, output.Amount})
+						uTxOut := &UTxOut{tx.Id, index, output.Amount}
+						if !isOnMempool(uTxOut) {
+							uTxOuts = append(uTxOuts, uTxOut)
+						}
 					}
 				}
 			}
