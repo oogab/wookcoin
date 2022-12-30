@@ -86,7 +86,7 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 func blocks(rw http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		json.NewEncoder(rw).Encode(blockchain.Blockchain().Blocks())
+		json.NewEncoder(rw).Encode(blockchain.Blocks(blockchain.Blockchain()))
 	case "POST":
 		blockchain.Blockchain().AddBlock()
 		rw.WriteHeader(http.StatusCreated)
@@ -126,16 +126,13 @@ func status(rw http.ResponseWriter, r *http.Request) {
 func balance(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	address := vars["address"]
-	// total이 존재하는지 확인한다.
 	total := r.URL.Query().Get("total")
 	switch total {
 	case "true":
-		// 이 amount를 response의 형태로 만들어 보내야 한다.
-		// response 구조를 만들어주자.
-		amount := blockchain.Blockchain().BalanceByAddress(address)
+		amount := blockchain.BalanceByAddress(address, blockchain.Blockchain())
 		json.NewEncoder(rw).Encode(balanceResponse{address, amount})
 	default:
-		utils.HandleError(json.NewEncoder(rw).Encode(blockchain.Blockchain().UTxOutsByAddress(address)))
+		utils.HandleError(json.NewEncoder(rw).Encode(blockchain.UTxOutsByAddress(address, blockchain.Blockchain())))
 	}
 }
 

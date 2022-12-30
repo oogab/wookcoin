@@ -62,18 +62,15 @@ func (b *Block) mine() {
 	}
 }
 
-// Data 관련 parameter, field 삭제
 func createBlock(prevHash string, height int) *Block {
 	block := &Block{
 		Hash:       "",
 		PrevHash:   prevHash,
 		Height:     height,
-		Difficulty: Blockchain().difficulty(),
+		Difficulty: difficulty(Blockchain()),
 		Nonce:      0,
 	}
 	block.mine()
-	// 채굴을 끝내고 해시를 찾고 전부 끝낸 다음
-	// transaction들을 block에 넣어 준다.
 	block.Transactions = Mempool.TxToConfirm()
 	block.persist()
 	return block

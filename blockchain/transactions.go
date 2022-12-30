@@ -54,12 +54,12 @@ type UTxOut struct {
 
 func isOnMempool(UTxOut *UTxOut) bool {
 	exists := false
+Outer:
 	for _, tx := range Mempool.Txs {
 		for _, input := range tx.TxIns {
-			// 여기서 exists true가 된다면,
-			// 이미 Mempool의 transaction Input으로 사용되었다는 것!
 			if input.TxID == UTxOut.TxID && input.Index == UTxOut.Index {
 				exists = true
+				break Outer
 			}
 		}
 	}
@@ -87,21 +87,17 @@ func makeCoinbaseTx(address string) *Tx {
 }
 
 func makeTx(from, to string, amount int) (*Tx, error) {
-	if Blockchain().BalanceByAddress(from) < amount {
+	if BalanceByAddress(from, Blockchain()) < amount {
 		return nil, errors.New("not enough 돈")
 	}
 	var txOuts []*TxOut
 	var txIns []*TxIn
-	// transaction output으로부터 받아온 총 잔고가 저장된다.
 	total := 0
-	uTxOuts := Blockchain().UTxOutsByAddress(from)
+	uTxOuts := UTxOutsByAddress(from, Blockchain())
 	for _, uTxOut := range uTxOuts {
-		if total > amount {
+		if total >= amount {
 			break
 		}
-		// 이제 amount를 transaction input에 전달해주지 않는다.
-		// 하지만 아직 owner를 input에 저장하고 이는 보안상 안전하지 않다.
-		// 왜냐하면 사람들이 이 owner를 그냥 변경할 수 있기 때문 -> 이후 지갑 구현에서 보안 적용 예정
 		txIn := &TxIn{uTxOut.TxID, uTxOut.Index, from}
 		txIns = append(txIns, txIn)
 		total += uTxOut.Amount
