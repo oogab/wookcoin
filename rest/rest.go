@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/oogab/wookcoin/blockchain"
 	"github.com/oogab/wookcoin/utils"
+	"github.com/oogab/wookcoin/wallet"
 )
 
 // const port string = ":4000"
@@ -164,5 +165,6 @@ func Start(aPort int) {
 	router.HandleFunc("/mempool", mempool)
 	router.HandleFunc("/transactions", transactions).Methods("POST")
 	fmt.Printf("Listening on http://localhost%s\n", port)
+	wallet.Start()
 	log.Fatal(http.ListenAndServe(port, router))
 }
